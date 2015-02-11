@@ -36,22 +36,27 @@
  * @example $.titleAlert("Hello World!", {requireBlur:true, stopOnFocus:true, duration:10000, interval:500});
  * @desc Flash title bar with text "Hello World!", if the window doesn't have focus, for 10 seconds or until window gets focused, with an interval of 500ms
  */
-;(function($){	
+;(function($){
 	$.titleAlert = function(text, settings) {
-		// check if it currently flashing something, if so reset it
-		if ($.titleAlert._running)
-			$.titleAlert.stop();
-		
-		// override default settings with specified settings
-		$.titleAlert._settings = settings = $.extend( {}, $.titleAlert.defaults, settings);
-		
-		// if it's required that the window doesn't have focus, and it has, just return
-		if (settings.requireBlur && $.titleAlert.hasFocus)
-			return;
+        // check if it currently flashing something, if so reset it
+        if ($.titleAlert._running)
+            $.titleAlert.stop();
+
+        // override default settings with specified settings
+        $.titleAlert._settings = settings = $.extend({}, $.titleAlert.defaults, settings);
+
+        // if it's required that the window doesn't have focus, and it has, just return
+        if (settings.requireBlur && $.titleAlert.hasFocus) {
+                if (settings.stopCallback) {
+                    settings.stopCallback();
+                }
+            return;
+        }
 		
 		// originalTitleInterval defaults to interval if not set
 		settings.originalTitleInterval = settings.originalTitleInterval || settings.interval;
-		
+
+        $.titleAlert._stopCallback = settings.stopCallback;
 		$.titleAlert._running = true;
 		$.titleAlert._initialText = document.title;
 		document.title = text;
@@ -64,7 +69,7 @@
 		    showingAlertTitle = !showingAlertTitle;
 		    document.title = (showingAlertTitle ? text : $.titleAlert._initialText);
 		    $.titleAlert._intervalToken = setTimeout(switchTitle, (showingAlertTitle ? settings.interval : settings.originalTitleInterval));
-		}
+		};
 		$.titleAlert._intervalToken = setTimeout(switchTitle, settings.interval);
 		
 		if (settings.stopOnMouseMove) {
@@ -100,13 +105,18 @@
 		clearTimeout($.titleAlert._intervalToken);
 		clearTimeout($.titleAlert._timeoutToken);
 		document.title = $.titleAlert._initialText;
+
+        if ($.titleAlert._stopCallback) {
+            $.titleAlert._stopCallback();
+        }
 		
+		$.titleAlert._stopCallback = null;
 		$.titleAlert._timeoutToken = null;
 		$.titleAlert._intervalToken = null;
 		$.titleAlert._initialText = null;
 		$.titleAlert._running = false;
 		$.titleAlert._settings = null;
-	}
+	};
 	
 	$.titleAlert.hasFocus = true;
 	$.titleAlert._running = false;
